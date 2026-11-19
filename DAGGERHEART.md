@@ -39,6 +39,23 @@ in the vault.
   Cards lift on hover. The GM gets the shared card as the note has it, never a copy the player could alter. The GM
   reads and writes in Obsidian with *Open session chat*. The chat lasts for the session.
 
+## Portrait Stage and the world map (add-ons, `src/addons/`)
+
+- **Portrait Stage for Atlas VTT**: while that plugin is enabled, the GM's stage reaches web players as it does
+  Atlas's player window, over the map and under the page's panels:
+  - portraits, spotlight, emotions, the out-of-scene bench and HP bars;
+  - film bars, blur and rain;
+  - shakes and flashes.
+
+  It is drawn by Portrait Stage's own renderer (`vendor/portrait-stage`, MIT, copied unchanged). Pictures go
+  through Connect's asset channel by fingerprint; neither file paths nor file names leave the GM's machine. Portrait
+  Stage itself needs no change.
+- **Mapa tab**: the image `Daggerheart/Theme/world_map.(webp|png|jpg)` in the vault is the world map players see,
+  to pan (drag) and zoom (wheel; double click fits). Replace the file and it updates. No pins yet.
+
+Both are images beyond the scene's, served through the asset server's one extra-files hook (`extraAssets.ts`)
+and kept in the player's memory only.
+
 ## Private sheet art
 
 Put the art in the vault folder `Daggerheart/Theme/`, named `hp_bg`, `heart_left`, `heart_right`, `hope_bg`,
@@ -77,5 +94,5 @@ Tests: `tests/unit/online/daggerheart/`.
 - No level-up in the sheet (do it in Heart of Daggers and re-import).
 - SRD card library for characters not made in Heart of Daggers.
 - Card art for web players.
-- The Mapa tab (a world map for players) and Portrait Stage on the web page.
+- Pins and a quest journal on the world map.
 - Spanish translation.

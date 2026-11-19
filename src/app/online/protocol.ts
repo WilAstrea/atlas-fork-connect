@@ -19,6 +19,7 @@ import { isTemplateDraft, isTemplateId, type TemplateShape } from './tools/templ
 import { isAskRulesList, isCastName, isSpellAbout, isMapSpells, isSpell, isSpellId, isSpellRequests, isSpellRules, isSpellWordsList, type AskRules, type SpellRules, type MapSpell, type Spell, type SpellRequest, type SpellWords, type SpellAbout } from './tools/spells';
 import { cleanLoggedEntries, isDiceLogEntries, isDiceModifier, isDiceSelection, isLaserColor, isLaserPoints, isLaserTimes, isOfferedDiceRules, isPhysicalRoll, type DiceLogEntry, type OfferedDiceRules, type PhysicalDie } from './tools/toolMessages';
 import { DH_PLAYER_MESSAGE_TYPES, DH_VALIDATORS, type DhMessage } from '../../daggerheart/protocol';
+import { ADDON_VALIDATORS, type AddonMessage } from '../../addons/protocol';
 export const PROTOCOL_VERSION = 1;
 export const MAX_CONTROL_MESSAGE_BYTES = 256 * 1024;
 export const MAX_PLAYER_NAME_LENGTH = 40;
@@ -180,7 +181,9 @@ export type ControlMessage =
   /** GM to a ready player, live runs only: the GM's camera, at most every 100 ms. */
   | { v: 1; type: 'cutscene-camera'; runId: string; eye: Vec3; target: Vec3 }
   /** Daggerheart sheets and rolls (`src/daggerheart/protocol.ts`). */
-  | DhMessage;
+  | DhMessage
+  /** Portrait Stage and the world map (`src/addons/protocol.ts`). */
+  | AddonMessage;
 
 /** Why a template or a spell was not kept: the GM's Atlas holds another map, the player or the scene has as many as it may, or the level holds no more. */
 export type MeasureRefusal = 'not-held' | 'limit' | 'full';
@@ -284,6 +287,7 @@ const VALIDATORS: Record<ControlMessage['type'], (m: Fields) => boolean> = {
   'cutscene-extras': (m) => isCutsceneRunId(m.runId) && isCutsceneKeyName(m.key) && isBoardPart(m) && isBoardExtras(m.extras),
   'cutscene-camera': (m) => isCutsceneRunId(m.runId) && isCutscenePose(m.eye) && isCutscenePose(m.target),
   ...DH_VALIDATORS,
+  ...ADDON_VALIDATORS,
 };
 
 export function encodeControl(message: ControlMessage): string {

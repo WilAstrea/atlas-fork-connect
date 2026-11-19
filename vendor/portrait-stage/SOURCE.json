@@ -1,0 +1,8 @@
+{
+  "name": "atlas-portrait-stage",
+  "version": "0.5.0",
+  "license": "MIT",
+  "author": "Marco",
+  "files": "src/stage/{StageRenderer,layout,emotions,rain,stageCss,types}.ts, copied unchanged",
+  "why": "The join page draws Portrait Stage's stage for online players with the plugin's own renderer, so both windows look alike."
+}

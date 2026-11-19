@@ -109,6 +109,13 @@ export class AssetLoader implements PlayerAssetHandler {
     this.want();
   }
 
+  private extras: readonly string[] = [];
+  /** Images wanted beside the scene's (the fork's add-ons: portraits, the world map); kept in memory only. */
+  setExtras(ids: readonly string[]): void {
+    this.extras = ids;
+    this.want();
+  }
+
   /** The files of Tabletop's 3D board of the scene (its materials' maps, door props and props); null for none. */
   setBoard(board: BoardExtras | null): void {
     this.board = board;
@@ -123,9 +130,9 @@ export class AssetLoader implements PlayerAssetHandler {
     const own = new Set([...sceneAssetIds(this.scene, shown), ...boardAssetIds(this.board)]);
     // A cutscene is drawn by the board, which draws minis and the board's files.
     const revealed = this.cutscene.flatMap((each) => [...sceneAssetIds(each.scene, { ...shown, minis: true }), ...boardAssetIds(each.extras)]);
-    const ids = [...new Set([...own, ...revealed])];
-    // What only a cutscene shows lives in memory for the run: it is never written to the device's image store.
-    this.transient = new Set(revealed.filter((id) => !own.has(id)));
+    const ids = [...new Set([...own, ...revealed, ...this.extras])];
+    // What only a cutscene (or an add-on) shows lives in memory: it is never written to the device's image store.
+    this.transient = new Set([...revealed, ...this.extras].filter((id) => !own.has(id)));
     for (const [id, wanted] of this.wanted) wanted.transient = this.transient.has(id);
     const keep = new Set(ids);
     const cancelled: string[] = [];
