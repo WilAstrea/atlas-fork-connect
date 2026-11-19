@@ -8,7 +8,7 @@ import type { SessionPlayer } from '../../../../src/app/online/GmSession';
 import type { ControlMessage } from '../../../../src/app/online/protocol';
 import { EMPTY_STAGE, DEFAULT_LOOK, type Portrait, type StageState } from '../../../../vendor/portrait-stage/stage/types';
 
-const players: SessionPlayer[] = [{ playerId: 'p1', name: 'Wil', status: 'admitted' }, { playerId: 'p2', name: 'Ana', status: 'waiting' }];
+const players: SessionPlayer[] = [{ playerId: 'p1', name: 'Wil', status: 'admitted' }, { playerId: 'p2', name: 'Ana', status: 'pending' }];
 
 function session() {
   const sent: Array<{ to: string; message: ControlMessage }> = [];
