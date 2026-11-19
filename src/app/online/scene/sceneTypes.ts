@@ -262,6 +262,8 @@ export interface PlayerWidget {
   icon: string;
   /** Counters and clocks: the count; timers: the remaining seconds. */
   value: number;
+  /** Its colour as Atlas draws it (`#rrggbb`); absent when it has none. */
+  color?: string;
 }
 
 export interface PlayerInitiativeEntry {

@@ -4,14 +4,25 @@
  * changes itself, it is drawn again from what the GM sends back.
  */
 import { TRAITS, type DomainCard, type Trait } from './model';
-import type { DhSheet } from './protocol';
-import { SHEET_CONDITIONS } from './protocol';
+import { cardFace, SHEET_CONDITIONS, type ChatEntry, type DhCardFace, type DhSheet, type ThemeImage } from './protocol';
 import type { DhEdit, DhRollRequest } from './rules';
 
 export interface SheetActions {
   edit(edit: DhEdit): void;
   /** Without it the sheet offers no rolls (the GM's own copy in a note). */
   roll?(roll: DhRollRequest): void;
+  /** Shares a domain card in the session chat (a click on the card); without it a click does nothing. */
+  share?(card: DhCardFace): void;
+}
+
+/** The GM's sheet art, as URLs, by its name in the theme folder. */
+export type SheetTheme = Partial<Record<ThemeImage, string>>;
+
+/** Puts the theme's art on `root` as CSS variables (`--dh-art-<name>`), and `has-theme` while there is any. */
+export function applyTheme(root: HTMLElement, theme: SheetTheme | null | undefined): void {
+  const entries = Object.entries(theme ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === 'string');
+  for (const [name, url] of entries) root.style.setProperty(`--dh-art-${name}`, `url("${url.replace(/"/g, '%22')}")`);
+  root.classList.toggle('has-theme', entries.length > 0);
 }
 
 /** What the player picked for their next roll; kept by the caller across redraws. */
@@ -73,6 +84,8 @@ function track(make: Make, label: string, value: number, max: number, kind: stri
   for (let i = 1; i <= max; i++) {
     const pip = make('button', `dh-pip${i <= value ? ' is-marked' : ''}`);
     pip.type = 'button';
+    // Two halves, which the theme's art uses for a broken heart or a split shield; plain pips ignore them.
+    pip.append(make('span', 'dh-pip-half dh-pip-left'), make('span', 'dh-pip-half dh-pip-right'));
     pip.setAttribute('aria-label', `${label} ${i} of ${max}${i <= value ? ', marked' : ''}`);
     pip.addEventListener('click', () => onSet(i === value ? i - 1 : i));
     pips.append(pip);
@@ -100,8 +113,19 @@ function rollOptions(choice: RollChoice): { experiences: string[]; advantage?: '
 /** A domain card as the table shows it: level, domain colour, type, Recall cost, its text, and its tokens. */
 export function renderCard(doc: Document, card: DomainCard, tokens: number, actions: SheetActions, artUrl?: string | null): HTMLElement {
   const make = maker(doc);
-  const el = make('article', `dh-card dh-card-${card.location}`);
+  const el = make('article', `dh-card dh-card-${card.location}${actions.share ? ' is-shareable' : ''}`);
   el.style.setProperty('--dh-domain', domainColor(card.domain));
+  if (actions.share) {
+    el.tabIndex = 0;
+    el.setAttribute('aria-label', `${card.name}: click to share in the chat`);
+    const share = (event: Event): void => {
+      // The card's own buttons (tokens, roll, move) keep their clicks.
+      if (event.target instanceof Element && event.target.closest('button')) return;
+      actions.share?.(cardFace(card));
+    };
+    el.addEventListener('click', share);
+    el.addEventListener('keydown', (event) => { if (event.key === 'Enter' && event.target === el) share(event); });
+  }
   const art = make('div', 'dh-card-art');
   if (artUrl) art.style.backgroundImage = `url("${artUrl.replace(/"/g, '%22')}")`;
   art.append(make('span', 'dh-card-level', String(card.level)), make('span', 'dh-card-recall', String(card.recall)));
@@ -129,6 +153,18 @@ export function renderCard(doc: Document, card: DomainCard, tokens: number, acti
   return el;
 }
 
+/** A card as the chat shows it: its face only, no buttons. */
+export function renderCardFace(doc: Document, face: DhCardFace): HTMLElement {
+  const make = maker(doc);
+  const el = make('article', 'dh-card dh-card-face');
+  el.style.setProperty('--dh-domain', domainColor(face.domain));
+  const art = make('div', 'dh-card-art');
+  art.append(make('span', 'dh-card-level', String(face.level)), make('span', 'dh-card-recall', String(face.recall)));
+  el.append(art, make('div', 'dh-card-type', face.type || 'Card'), make('h4', 'dh-card-name', face.name), make('div', 'dh-card-domain', face.domain));
+  el.append(richText(make, face.effect));
+  return el;
+}
+
 export interface RenderOptions {
   doc: Document;
   choice: RollChoice;
@@ -138,6 +174,10 @@ export interface RenderOptions {
   artUrl?: (card: DomainCard) => string | null;
   /** A line about the last roll or refusal, shown above the cards. */
   status?: string | null;
+  /** The GM's sheet art, when there is some. */
+  theme?: SheetTheme | null;
+  /** Whether the sheet ends with the inventory (the page has a tab of its own for it). */
+  withInventory?: boolean;
 }
 
 export function renderSheet(root: HTMLElement, sheet: DhSheet, actions: SheetActions, options: RenderOptions): void {
@@ -147,6 +187,7 @@ export function renderSheet(root: HTMLElement, sheet: DhSheet, actions: SheetAct
   const canRoll = !!actions.roll;
   root.replaceChildren();
   root.classList.add('dh-sheet');
+  applyTheme(root, options.theme);
 
   // Header: who, and the six traits (a click rolls the trait with what is picked below).
   const head = make('header', 'dh-head');
@@ -289,7 +330,7 @@ export function renderSheet(root: HTMLElement, sheet: DhSheet, actions: SheetAct
   }
   root.append(table);
 
-  if (build.inventory.length > 0 || build.gold.handfuls + build.gold.bags + build.gold.chests > 0) {
+  if (options.withInventory !== false && (build.inventory.length > 0 || build.gold.handfuls + build.gold.bags + build.gold.chests > 0)) {
     const inv = make('details', 'dh-box dh-inventory');
     inv.append(make('summary', undefined, 'Inventory & gold'));
     const list = make('ul');
@@ -299,9 +340,77 @@ export function renderSheet(root: HTMLElement, sheet: DhSheet, actions: SheetAct
   }
 }
 
+/** The Inventory tab: gold, what is carried and worn, and the items list. */
+export function renderInventory(root: HTMLElement, sheet: DhSheet, options: Pick<RenderOptions, 'doc' | 'theme'>): void {
+  const make = maker(options.doc);
+  const { build } = sheet;
+  root.replaceChildren();
+  root.classList.add('dh-sheet', 'dh-inventory-page');
+  applyTheme(root, options.theme);
+  const head = make('header', 'dh-head');
+  head.append(make('h3', 'dh-name', build.name), make('div', 'dh-sub', 'Inventory'));
+  root.append(head);
+  const grid = make('div', 'dh-grid');
+
+  const gold = make('section', 'dh-box dh-gold');
+  gold.append(make('h4', 'dh-box-title', 'Gold'));
+  const coins = make('div', 'dh-stats dh-stats-4');
+  for (const [label, value] of [['Handfuls', build.gold.handfuls], ['Bags', build.gold.bags], ['Chests', build.gold.chests], ['Stashed', build.gold.stashed]] as const) {
+    const s = make('div', 'dh-stat');
+    s.append(make('span', 'dh-stat-value', String(value)), make('span', 'dh-stat-label', label));
+    coins.append(s);
+  }
+  gold.append(coins);
+  grid.append(gold);
+
+  const gear = make('section', 'dh-box');
+  gear.append(make('h4', 'dh-box-title', 'Equipped'));
+  for (const w of build.weapons) {
+    const row = make('div', `dh-weapon${w.active ? '' : ' is-inactive'}`);
+    row.append(make('div', 'dh-weapon-name', w.name), make('div', 'dh-tags', [title(w.slot), w.damage, w.range].filter(Boolean).join(' · ')));
+    gear.append(row);
+  }
+  if (build.armor) {
+    const row = make('div', 'dh-weapon');
+    row.append(make('div', 'dh-weapon-name', build.armor.name), make('div', 'dh-tags', `Armor ${build.armor.score}`));
+    gear.append(row);
+  }
+  grid.append(gear);
+
+  const items = make('section', 'dh-box dh-items');
+  items.append(make('h4', 'dh-box-title', `Items (${build.inventory.length})`));
+  if (build.inventory.length === 0) items.append(make('div', 'dh-note', 'Nothing carried.'));
+  const list = make('ul', 'dh-item-list');
+  for (const item of build.inventory) list.append(make('li', undefined, item));
+  items.append(list);
+  grid.append(items);
+  root.append(grid);
+}
+
 /** The line shown for a roll result. */
 export function rolledLine(label: string, total: number, hope?: number, fear?: number, outcome?: string): string {
   if (hope === undefined || fear === undefined) return `${label}: ${total}`;
   const how = outcome === 'critical' ? 'Critical success!' : outcome === 'hope' ? 'with Hope' : 'with Fear';
   return `${label}: ${total} ${how} (Hope ${hope} · Fear ${fear})`;
+}
+
+/** One chat line: who, when, and their words or card. Obsidian's chat view and the page's chat panel draw it alike. */
+export function chatLine(doc: Document, entry: ChatEntry): HTMLElement {
+  const line = doc.createElement('div');
+  line.className = `dh-chat-line${entry.gm ? ' is-gm' : ''}`;
+  const head = doc.createElement('div');
+  head.className = 'dh-chat-head';
+  const who = doc.createElement('b');
+  who.textContent = entry.gm ? 'GM' : entry.from;
+  const when = doc.createElement('time');
+  when.textContent = new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  head.append(who, when);
+  line.append(head);
+  if (entry.text) {
+    const p = doc.createElement('p');
+    p.textContent = entry.text;
+    line.append(p);
+  }
+  if (entry.card) line.append(renderCardFace(doc, entry.card));
+  return line;
 }

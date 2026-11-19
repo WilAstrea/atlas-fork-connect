@@ -85,7 +85,7 @@ export interface PlayerSessionOptions {
   /** The sheets of the tokens this player controls (`token-sheets`): their exact numbers and stat blocks. */
   onSheets?(entries: readonly TokenSheet[]): void;
   /** Daggerheart: the player's character sheets, a roll's outcome, and a refused request (`src/daggerheart`). */
-  onDaggerheart?(message: Extract<ControlMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' }>): void;
+  onDaggerheart?(message: Extract<ControlMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' | 'dh-theme' | 'chat' }>): void;
   /** Someone else's ping, for the scene `sceneId`. */
   onPing?(ping: PlayerPing): void;
   /**
@@ -255,7 +255,7 @@ export class PlayerSession {
 
   /** Asks the GM to roll something on the player's own sheet, by where it is on it; false when it cannot go. */
   /** Sends a Daggerheart sheet change or roll; false when it cannot go. */
-  sendDaggerheart(message: Extract<ControlMessage, { type: 'dh-edit' | 'dh-roll' }>): boolean {
+  sendDaggerheart(message: Extract<ControlMessage, { type: 'dh-edit' | 'dh-roll' | 'chat-send' }>): boolean {
     if (this.finished || this.state.status !== 'admitted' || !this.link) return false;
     this.link.send('control', encodeControl(message));
     return true;
@@ -425,6 +425,8 @@ export class PlayerSession {
       case 'dh-sheets':
       case 'dh-rolled':
       case 'dh-refused':
+      case 'dh-theme':
+      case 'chat':
         this.options.onDaggerheart?.(message);
         break;
       case 'spell-asks':

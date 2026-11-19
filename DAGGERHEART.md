@@ -29,6 +29,23 @@ in the vault.
   - A roll with Fear tells the GM (Fear +1).
   - Critical damage adds the dice's maximum.
 
+## The player's table (web page)
+
+- **Tabs** at the top: 1 Mesa (the map), 2 Ficha (the sheet), 3 Inventario, 4 Mapa (coming next). Keys 1–4 switch them.
+- **Atlas widgets** (Fear, a torch timer…) show as badges at the top right, in their own colour and icon.
+- **Bottom left**: the dock with the **Chat** and the **Dice log**; rolls appear above it.
+- The page's other buttons (menu, sheets, shown image) are at the bottom right.
+- **Chat**: players and the GM write to the whole table. A player clicks one of their loadout or vault cards to share it.
+  Cards lift on hover. The GM gets the shared card as the note has it, never a copy the player could alter. The GM
+  reads and writes in Obsidian with *Open session chat*. The chat lasts for the session.
+
+## Private sheet art
+
+Put the art in the vault folder `Daggerheart/Theme/`, named `hp_bg`, `heart_left`, `heart_right`, `hope_bg`,
+`hope_gem`, `stress_bg`, `stress_gem`, `armor_gem_left` and `armor_gem_right` (`.webp`, `.png`, `.jpg` or `.gif`).
+The GM's sheet uses it directly. Players get it, scaled down, over the session when they join. It is never part of
+this repository or of the published page. Without the folder, the sheet draws its own plain pips.
+
 ## Note format
 
 ```yaml
@@ -60,4 +77,5 @@ Tests: `tests/unit/online/daggerheart/`.
 - No level-up in the sheet (do it in Heart of Daggers and re-import).
 - SRD card library for characters not made in Heart of Daggers.
 - Card art for web players.
+- The Mapa tab (a world map for players) and Portrait Stage on the web page.
 - Spanish translation.

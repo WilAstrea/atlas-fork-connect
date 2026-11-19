@@ -221,7 +221,8 @@ describe('projectForPlayers', () => {
     expect(scene.pins).toEqual([]);
     expect(Object.keys(scene.measurement.snapGrid!).sort()).toEqual(['offsetX', 'offsetY', 'size', 'type']);
     expect(scene.initiative?.entries[0]).not.toHaveProperty('stress');
-    expect(keysOf(scene.widgets).has('color')).toBe(false);
+    // Fork (Daggerheart table): a widget's colour goes out, so its badge is drawn in it.
+    expect(scene.widgets[0]?.color).toBe('#ff0000');
   });
 
   it('projects messy map data into messages players accept', () => {

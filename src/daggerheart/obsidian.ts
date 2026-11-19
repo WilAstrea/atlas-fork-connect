@@ -2,20 +2,108 @@
  * Daggerheart in Obsidian: the session part, the "Import Heart of Daggers PDF" command, and the `daggerheart-sheet`
  * code block, which draws a character note's sheet for the GM (editable, no rolls: players roll from the page).
  */
-import { MarkdownRenderChild, Modal, Notice, Setting, TFile, normalizePath, type App, type Plugin } from 'obsidian';
+import { ItemView, MarkdownRenderChild, Modal, Notice, Setting, TFile, normalizePath, type App, type Plugin, type WorkspaceLeaf } from 'obsidian';
 import type { OptionalParts } from '../app/online/hostedSession';
 import { DaggerheartHost } from './DaggerheartHost';
 import { applyImport, readPdfFields } from './hodImport';
 import type { DaggerheartCharacter } from './model';
 import { characterOf, obsidianCharacterStore, writeInto } from './obsidianStore';
-import { sheetId } from './protocol';
-import { newRollChoice, renderSheet } from './render';
+import { ChatLog } from './chat';
+import { MAX_THEME_CHARS, MAX_THEME_IMAGE_CHARS, sheetId, THEME_IMAGES, type ChatEntry, type ThemeImage } from './protocol';
+import { chatLine, newRollChoice, renderSheet, type SheetTheme } from './render';
 import { applyEdit, moveCard } from './rules';
 
 export const DEFAULT_CHARACTER_FOLDER = 'Daggerheart/Characters';
+/** The GM's private sheet art: files named as `THEME_IMAGES` (any image extension). Kept in the vault, never published. */
+export const DEFAULT_THEME_FOLDER = 'Daggerheart/Theme';
+const THEME_EXTENSIONS = ['webp', 'png', 'jpg', 'jpeg', 'gif'];
+/** The art is drawn at most this big; larger files are scaled down before they are sent. */
+const THEME_MAX_SIDE = 160;
+
+/** The session chat, shared by the session's Daggerheart part and the GM's chat view. One per plugin load. */
+export const sessionChat = new ChatLog();
+
+function themeFile(app: App, name: ThemeImage, folder: string): TFile | null {
+  for (const ext of THEME_EXTENSIONS) {
+    const file = app.vault.getAbstractFileByPath(normalizePath(`${folder}/${name}.${ext}`));
+    if (file instanceof TFile) return file;
+  }
+  return null;
+}
+
+/** The theme's art as small data URLs for players: each image scaled to fit `THEME_MAX_SIDE` and re-encoded. */
+export async function loadTheme(app: App, folder = DEFAULT_THEME_FOLDER): Promise<Partial<Record<ThemeImage, string>>> {
+  const images: Partial<Record<ThemeImage, string>> = {};
+  let total = 0;
+  for (const name of THEME_IMAGES) {
+    const file = themeFile(app, name, folder);
+    if (!file) continue;
+    try {
+      const bitmap = await createImageBitmap(new Blob([await app.vault.readBinary(file)]));
+      const scale = Math.min(1, THEME_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+      const canvas = createEl('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const url = canvas.toDataURL('image/webp', 0.9);
+      if (url.length > MAX_THEME_IMAGE_CHARS || total + url.length > MAX_THEME_CHARS) continue;
+      images[name] = url;
+      total += url.length;
+    } catch (error) {
+      console.warn(`[Daggerheart] Could not read the theme image ${file.path}:`, error);
+    }
+  }
+  return images;
+}
+
+/** The theme's art for the GM's own sheet, straight from the vault. */
+function localTheme(app: App, folder = DEFAULT_THEME_FOLDER): SheetTheme {
+  const theme: SheetTheme = {};
+  for (const name of THEME_IMAGES) {
+    const file = themeFile(app, name, folder);
+    if (file) theme[name] = app.vault.getResourcePath(file);
+  }
+  return theme;
+}
 
 export function daggerheartPart(app: App): NonNullable<OptionalParts['daggerheart']> {
-  return ({ session, roll, notify }) => new DaggerheartHost({ session, store: obsidianCharacterStore(app), roll, notify });
+  return ({ session, roll, notify }) => new DaggerheartHost({
+    session, store: obsidianCharacterStore(app), roll, notify, chat: sessionChat, theme: () => loadTheme(app),
+  });
+}
+
+export const CHAT_VIEW = 'daggerheart-session-chat';
+
+/** The session chat in Obsidian: every line players and the GM wrote this session, and a box to write as the GM. */
+class ChatView extends ItemView {
+  private list: HTMLElement | null = null;
+
+  getViewType(): string { return CHAT_VIEW; }
+  getDisplayText(): string { return 'Session chat'; }
+  getIcon(): string { return 'messages-square'; }
+
+  async onOpen(): Promise<void> {
+    const root = this.contentEl;
+    root.empty();
+    root.addClass('dh-chat', 'dh-chat-gm');
+    this.list = root.createDiv({ cls: 'dh-chat-list' });
+    const form = root.createEl('form', { cls: 'dh-chat-form' });
+    const input = form.createEl('input', { type: 'text', placeholder: 'Write to the table…', attr: { maxlength: '500', 'aria-label': 'Message' } });
+    form.createEl('button', { text: 'Send', type: 'submit' });
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (sessionChat.post('GM', { text: input.value }, true)) input.value = '';
+    });
+    for (const entry of sessionChat.entries) this.add(entry);
+    this.register(sessionChat.onEntry((entry) => this.add(entry)));
+  }
+
+  private add(entry: ChatEntry): void {
+    if (!this.list) return;
+    this.list.append(chatLine(this.containerEl.doc, entry));
+    this.list.scrollTop = this.list.scrollHeight;
+  }
 }
 
 /** Asks for the player's name in the online session, prefilled; resolves null when cancelled. */
@@ -130,8 +218,9 @@ class SheetBlock extends MarkdownRenderChild {
         const state = applyEdit(cur, edit);
         return state ? { ...cur, state } : null;
       }),
+      share: (card) => { sessionChat.post('GM', { card }, true); new Notice(`Shared ${card.name} in the session chat.`); },
     }, {
-      doc: this.containerEl.doc, choice: this.choice, redraw: () => this.draw(),
+      doc: this.containerEl.doc, choice: this.choice, redraw: () => this.draw(), theme: localTheme(this.app),
       artUrl: (card) => {
         const art = card.art ? this.app.vault.getAbstractFileByPath(card.art) : null;
         return art instanceof TFile ? this.app.vault.getResourcePath(art) : null;
@@ -140,8 +229,22 @@ class SheetBlock extends MarkdownRenderChild {
   }
 }
 
+async function openChat(app: App): Promise<void> {
+  const existing = app.workspace.getLeavesOfType(CHAT_VIEW)[0];
+  const leaf = existing ?? app.workspace.getRightLeaf(false);
+  if (!leaf) return;
+  if (!existing) await leaf.setViewState({ type: CHAT_VIEW, active: true });
+  await app.workspace.revealLeaf(leaf);
+}
+
 export function registerDaggerheart(plugin: Plugin): void {
   const { app } = plugin;
+  plugin.registerView(CHAT_VIEW, (leaf: WorkspaceLeaf) => new ChatView(leaf));
+  plugin.addCommand({ id: 'daggerheart-open-chat', name: 'Open session chat', callback: () => { void openChat(app); } });
+  // A card a player shares, while the chat view is closed, still reaches the GM.
+  plugin.register(sessionChat.onEntry((entry) => {
+    if (!entry.gm && entry.card && app.workspace.getLeavesOfType(CHAT_VIEW).length === 0) new Notice(`${entry.from} shared ${entry.card.name}.`);
+  }));
   plugin.addCommand({ id: 'daggerheart-import-pdf', name: 'Import Heart of Daggers PDF', callback: () => { void importHeartOfDaggers(app); } });
   plugin.registerMarkdownCodeBlockProcessor('daggerheart-sheet', (_source, el, ctx) => {
     ctx.addChild(new SheetBlock(el, app, ctx.sourcePath));
