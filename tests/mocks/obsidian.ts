@@ -37,6 +37,11 @@ export class Plugin {
     this.commands[command.id] = command;
     return command;
   }
+  /** The code block processors registered, by language. */
+  codeBlocks: Record<string, unknown> = {};
+  registerMarkdownCodeBlockProcessor(language: string, processor: unknown): void {
+    this.codeBlocks[language] = processor;
+  }
 }
 
 /** Obsidian's settings tab base: the container the tab renders into. */

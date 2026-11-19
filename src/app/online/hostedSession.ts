@@ -5,7 +5,7 @@
  * it the session runs without that feature (no token assignments, no dice, no lasers relayed).
  */
 import { PlayerColors } from './tools/playerColors';
-import type { ViewsApi } from '@atlas-vtt/api-types';
+import type { DiceRollResult, ViewsApi } from '@atlas-vtt/api-types';
 import { Notice } from 'obsidian';
 import { AssetServer } from './assets/AssetServer';
 import type { TokenControl } from './control/TokenControl';
@@ -78,6 +78,8 @@ export interface OptionalParts {
   /** Players' dice, rolled and logged through Atlas's dice (B7). Without it players cannot roll. */
   dice?: (context: HostedContext) => HostedPart & {
     rollFor?: (player: SessionPlayer, formula: string, extras?: SheetRollExtras) => boolean;
+    /** As `rollFor`, with Atlas's roll; null when refused. */
+    rollResultFor?: (player: SessionPlayer, formula: string, extras?: SheetRollExtras) => DiceRollResult | null;
     /** Names players' physical sheet rolls from the sheets part. */
     useSheets?: (sheets: SheetRollLabels | null) => void;
   };
@@ -96,7 +98,12 @@ export interface OptionalParts {
   templates?: (context: HostedContext) => HostedPart & { clear(): void; hasAny(): boolean };
   /** The notes of readable pins, sent to a player who opens one. Without it opening a pin shows nothing. */
   notes?: (context: HostedContext) => HostedPart;
+  /** Daggerheart sheets from the vault's character notes, edited and rolled by their players (`src/daggerheart`). */
+  daggerheart?: (context: HostedContext & { roll: DaggerheartRoll | null; notify: (message: string) => void }) => HostedPart;
 }
+
+/** Rolls for a player through the dice part, with Atlas's roll; null when refused. */
+export type DaggerheartRoll = (player: SessionPlayer, formula: string, extras?: SheetRollExtras) => DiceRollResult | null;
 
 export interface HostEnvironment extends OptionalParts {
   settings: { get(): OnlineSettings };
@@ -258,6 +265,8 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
   boardHub?.useResourceShows(env.resourceShows ? (mapPath, tokenId) => env.resourceShows?.(mapPath, tokenId) ?? null : null);
 
   const notes = env.notes?.(context) ?? null;
+  const daggerheartRoll: DaggerheartRoll | null = dice?.rollResultFor ? (player, formula, extras) => dice.rollResultFor?.(player, formula, extras) ?? null : null;
+  const daggerheart = env.daggerheart?.({ ...context, roll: daggerheartRoll, notify }) ?? null;
   const rollFor = dice?.rollFor ? (player: SessionPlayer, formula: string, extras?: SheetRollExtras): boolean => dice.rollFor?.(player, formula, extras) ?? false : null;
   const sheets = tokenControl && env.sheets ? env.sheets({ ...context, control: tokenControl.control, ...(rollFor ? { rollFor } : {}) }) : null;
   // Players' physical sheet rolls are named from the GM's own copy of their sheets.
@@ -277,7 +286,7 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
     stopSharing = null;
     stopErrors();
     assetServer.stop();
-    for (const part of given([arViews, notes, templates, pings, sheets, tokenControl, laser, dice])) part.stop();
+    for (const part of given([daggerheart, arViews, notes, templates, pings, sheets, tokenControl, laser, dice])) part.stop();
     colors.stop();
     cutsceneSender.stop();
     boardSender.stop();
@@ -300,7 +309,7 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
     boardSender.start();
     cutsceneSender.start();
     assetServer.start();
-    for (const part of given([tokenControl, dice, laser, sheets, pings, templates, notes, arViews])) {
+    for (const part of given([tokenControl, dice, laser, sheets, pings, templates, notes, arViews, daggerheart])) {
       part.start();
       parts.push(part);
     }

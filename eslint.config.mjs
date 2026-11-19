@@ -19,7 +19,7 @@ export default defineConfig([
     rules: {
       // "Atlas" is the product name. `ignoreWords` rather than `brands`,
       // because `brands` replaces the rule's built-in list (Obsidian, GitHub, …).
-      "obsidianmd/ui/sentence-case": ["warn", { ignoreWords: ["Atlas", "VTT", "Connect", "PeerJS", "TURN", "STUN", "GM"] }],
+      "obsidianmd/ui/sentence-case": ["warn", { ignoreWords: ["Atlas", "VTT", "Connect", "PeerJS", "TURN", "STUN", "GM", "Daggerheart", "Heart", "Daggers", "Hope", "Fear"] }],
       // Stricter than the scorecard: type errors are fixed, not silenced.
       "@typescript-eslint/ban-ts-comment": ["error", {
         "ts-ignore": true,
@@ -51,7 +51,7 @@ export default defineConfig([
   {
     // The join page's DOM code (`online-client/`) also runs inside Obsidian (the Canvas scene tab): it is linted in
     // place. It is written for a plain web page, which has no `createEl`, so only Obsidian's DOM rules are off.
-    files: ["online-client/**"],
+    files: ["online-client/**", "src/daggerheart/render.ts"],
     rules: { "obsidianmd/prefer-create-el": "off" },
   },
   {

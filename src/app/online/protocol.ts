@@ -18,6 +18,7 @@ import { isPinNote, type PinNote } from './tools/pinNotes';
 import { isTemplateDraft, isTemplateId, type TemplateShape } from './tools/templates';
 import { isAskRulesList, isCastName, isSpellAbout, isMapSpells, isSpell, isSpellId, isSpellRequests, isSpellRules, isSpellWordsList, type AskRules, type SpellRules, type MapSpell, type Spell, type SpellRequest, type SpellWords, type SpellAbout } from './tools/spells';
 import { cleanLoggedEntries, isDiceLogEntries, isDiceModifier, isDiceSelection, isLaserColor, isLaserPoints, isLaserTimes, isOfferedDiceRules, isPhysicalRoll, type DiceLogEntry, type OfferedDiceRules, type PhysicalDie } from './tools/toolMessages';
+import { DH_PLAYER_MESSAGE_TYPES, DH_VALIDATORS, type DhMessage } from '../../daggerheart/protocol';
 export const PROTOCOL_VERSION = 1;
 export const MAX_CONTROL_MESSAGE_BYTES = 256 * 1024;
 export const MAX_PLAYER_NAME_LENGTH = 40;
@@ -177,7 +178,9 @@ export type ControlMessage =
   /** GM to a ready player: the board extras of `key`'s scene, in parts of one `seq`. */
   | { v: 1; type: 'cutscene-extras'; runId: string; key: string; seq: number; part: number; parts: number; extras: BoardExtras }
   /** GM to a ready player, live runs only: the GM's camera, at most every 100 ms. */
-  | { v: 1; type: 'cutscene-camera'; runId: string; eye: Vec3; target: Vec3 };
+  | { v: 1; type: 'cutscene-camera'; runId: string; eye: Vec3; target: Vec3 }
+  /** Daggerheart sheets and rolls (`src/daggerheart/protocol.ts`). */
+  | DhMessage;
 
 /** Why a template or a spell was not kept: the GM's Atlas holds another map, the player or the scene has as many as it may, or the level holds no more. */
 export type MeasureRefusal = 'not-held' | 'limit' | 'full';
@@ -188,6 +191,7 @@ type Vec3 = { x: number; y: number; z: number };
 /** What an admitted player may send besides `ping`, `pong` and `bye`; the GM drops every other type from a player. */
 export const PLAYER_MESSAGE_TYPES: ReadonlySet<ControlMessage['type']> = new Set<ControlMessage['type']>([
   'scene-resync', 'token-move', 'dice-roll', 'dice-result', 'laser', 'sheet-roll', 'map-ping', 'map-template', 'note-request', 'board-request', 'ar-view', 'ar-survey', 'map-spell', 'player-color', 'cutscene-ready',
+  ...DH_PLAYER_MESSAGE_TYPES,
 ]);
 
 export type Decoded =
@@ -279,6 +283,7 @@ const VALIDATORS: Record<ControlMessage['type'], (m: Fields) => boolean> = {
     && isFogRecords((m.scene as Fields).fog) && isDrawingRecords((m.scene as Fields).drawings),
   'cutscene-extras': (m) => isCutsceneRunId(m.runId) && isCutsceneKeyName(m.key) && isBoardPart(m) && isBoardExtras(m.extras),
   'cutscene-camera': (m) => isCutsceneRunId(m.runId) && isCutscenePose(m.eye) && isCutscenePose(m.target),
+  ...DH_VALIDATORS,
 };
 
 export function encodeControl(message: ControlMessage): string {

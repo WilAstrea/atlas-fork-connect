@@ -1,0 +1,98 @@
+/* Daggerheart sheet and cards: shared by the join page (its own variables) and Obsidian (Obsidian's). */
+.dh-sheet {
+  --dh-bg: var(--card, var(--background-primary, #16151c));
+  --dh-panel: color-mix(in srgb, var(--dh-bg) 88%, #7a5cff 12%);
+  --dh-line: var(--border, var(--background-modifier-border, #3a3550));
+  --dh-text: var(--text, var(--text-normal, #ecebf3));
+  --dh-muted: var(--muted, var(--text-muted, #a29fb3));
+  --dh-accent: #8b5cf6;
+  --dh-hope: #e2b33c;
+  --dh-hp: #d6455d;
+  --dh-stress: #3fb37f;
+  --dh-armor: #5b8def;
+  display: grid; gap: 12px; color: var(--dh-text); font-size: 13px; line-height: 1.35;
+}
+.dh-sheet button { font: inherit; color: inherit; cursor: pointer; }
+.dh-sheet button:disabled { cursor: default; }
+.dh-sheet p { margin: 0 0 6px; }
+.dh-head { display: grid; gap: 10px; }
+.dh-name { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+.dh-sub { color: var(--dh-muted); font-size: 12px; }
+.dh-traits { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.dh-trait {
+  display: grid; justify-items: center; gap: 2px; padding: 6px 2px 8px; border: 1px solid var(--dh-line); border-radius: 8px 8px 22px 22px;
+  background: var(--dh-panel);
+}
+.dh-trait:not(:disabled):hover { border-color: var(--dh-accent); }
+.dh-trait.is-spellcast { border-color: var(--dh-hope); box-shadow: inset 0 0 0 1px var(--dh-hope); }
+.dh-trait-name { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dh-muted); }
+.dh-trait-value { font-size: 18px; font-weight: 800; }
+.dh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.dh-box { display: grid; align-content: start; gap: 8px; padding: 10px; border: 1px solid var(--dh-line); border-radius: 10px; background: var(--dh-panel); }
+.dh-box-title, .dh-box > summary { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dh-muted); }
+.dh-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+.dh-stat { display: grid; padding: 6px 0; border: 1px solid var(--dh-line); border-radius: 8px; }
+.dh-stat-value { font-size: 20px; font-weight: 800; }
+.dh-stat-label { font-size: 10px; text-transform: uppercase; color: var(--dh-muted); }
+.dh-thresholds { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 6px 8px; border-radius: 8px; background: rgb(0 0 0 / 0.2); }
+.dh-thresholds b { font-size: 16px; }
+.dh-th { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--dh-muted); }
+.dh-track { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 6px; }
+.dh-track-label { font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.dh-track-count { color: var(--dh-muted); font-size: 11px; }
+.dh-pips { display: flex; flex-wrap: wrap; gap: 4px; }
+.dh-pip { width: 18px; height: 18px; padding: 0; border: 2px solid var(--dh-pip, var(--dh-accent)); background: transparent; border-radius: 4px; transform: rotate(45deg) scale(0.8); }
+.dh-pip.is-marked { background: var(--dh-pip, var(--dh-accent)); }
+.dh-track-hp .dh-pip { --dh-pip: var(--dh-hp); border-radius: 50%; transform: none; }
+.dh-track-stress .dh-pip { --dh-pip: var(--dh-stress); }
+.dh-track-hope .dh-pip { --dh-pip: var(--dh-hope); }
+.dh-track-armor .dh-pip { --dh-pip: var(--dh-armor); border-radius: 4px 4px 9px 9px; transform: none; }
+.dh-conditions, .dh-roll-options, .dh-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dh-chip { padding: 3px 10px; border: 1px solid var(--dh-line); border-radius: 999px; background: transparent; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.dh-chip.is-on { background: var(--dh-accent); border-color: var(--dh-accent); color: #fff; }
+.dh-weapon { display: grid; gap: 4px; padding: 8px; border-radius: 8px; background: rgb(0 0 0 / 0.18); }
+.dh-weapon.is-inactive { opacity: 0.6; }
+.dh-weapon-name { font-weight: 800; text-transform: uppercase; }
+.dh-tags { color: var(--dh-muted); font-size: 11px; }
+.dh-action { padding: 4px 10px; border: 0; border-radius: 6px; background: var(--dh-accent); color: #fff !important; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.dh-action.dh-subtle { background: transparent; border: 1px solid var(--dh-accent); color: var(--dh-text) !important; }
+.dh-mini { min-width: 22px; padding: 1px 6px; border: 1px solid var(--dh-line); border-radius: 6px; background: transparent; }
+.dh-experience { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--dh-line); border-radius: 8px; background: transparent; text-align: left; font-weight: 700; text-transform: uppercase; }
+.dh-experience.is-picked { border-color: var(--dh-hope); background: color-mix(in srgb, var(--dh-hope) 20%, transparent); }
+.dh-modifier { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.dh-note { color: var(--dh-muted); font-size: 11px; }
+.dh-note.is-warning { color: var(--dh-hp); }
+.dh-feature > summary { cursor: pointer; font-weight: 700; }
+.dh-text { font-size: 12px; }
+.dh-status { padding: 8px 12px; border-left: 3px solid var(--dh-hope); border-radius: 6px; background: rgb(0 0 0 / 0.25); font-weight: 700; }
+.dh-table { display: grid; gap: 8px; }
+.dh-cards { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.dh-vault > summary { cursor: pointer; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--dh-muted); }
+.dh-card {
+  --dh-domain: #555a66;
+  flex: 0 0 200px; display: grid; grid-template-rows: auto auto auto auto 1fr auto; gap: 4px; padding-bottom: 8px;
+  border-radius: 12px; overflow: hidden; background: #fbf8f1; color: #1c1a22; box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+}
+.dh-card-art {
+  position: relative; height: 92px; background: linear-gradient(135deg, var(--dh-domain), color-mix(in srgb, var(--dh-domain) 40%, #000));
+  background-size: cover; background-position: center;
+}
+.dh-card-level {
+  position: absolute; top: 0; left: 12px; width: 28px; padding: 6px 0 10px; text-align: center; font-weight: 800; font-size: 16px; color: #fff;
+  background: color-mix(in srgb, var(--dh-domain) 80%, #000); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+.dh-card-recall { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; border: 2px solid #e2b33c; border-radius: 50%; background: #1c1a22; color: #fff; font-weight: 800; font-size: 12px; }
+.dh-card-type { justify-self: center; margin-top: -10px; padding: 1px 14px; border-radius: 4px; background: var(--dh-domain); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; z-index: 1; }
+.dh-card-name { margin: 0; padding: 0 10px; text-align: center; font-size: 14px; font-weight: 800; text-transform: uppercase; }
+.dh-card-domain { text-align: center; font-size: 10px; color: #6b6878; text-transform: uppercase; letter-spacing: 0.08em; }
+.dh-card .dh-text { padding: 0 10px; max-height: 150px; overflow-y: auto; font-size: 11px; }
+.dh-card-foot { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 0 8px; }
+.dh-card-foot button { color: #1c1a22; }
+.dh-card .dh-mini { border-color: #c9c3d6; }
+.dh-card-tokens { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; }
+.dh-card-vault { opacity: 0.85; }
+.dh-inventory ul { margin: 0; padding-left: 18px; }
+
+/* The page's drawer is wider than its token sheets. */
+.dh-panel { width: min(760px, 100%) !important; }
+.dh-button { font-size: 11px; font-weight: 800; }
