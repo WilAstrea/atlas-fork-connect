@@ -176,17 +176,21 @@ export class DiceHost implements SessionHandler {
    * refused it.
    */
   rollFor(player: SessionPlayer, formula: string, extras: SheetRollExtras = {}): boolean {
-    if (!this.limit.allow(player.playerId, Date.now())) return false;
+    return this.rollResultFor(player, formula, extras) !== null;
+  }
+
+  /** As `rollFor`, with the roll Atlas made (the Daggerheart sheet reads its Hope and Fear dice); null when refused. */
+  rollResultFor(player: SessionPlayer, formula: string, extras: SheetRollExtras = {}): DiceRollResult | null {
+    if (!this.limit.allow(player.playerId, Date.now())) return null;
     const label = player.name.slice(0, MAX_ROLLED_BY);
     this.rolling = { playerId: player.playerId, name: label };
     try {
       // The map of the player's own scene: what they see, live or parked; none while they have no scene.
-      this.options.roll({ formula, mapPath: this.options.projection.slotOf(player.playerId)?.mapPath || null, rolledBy: label, ...extras });
-      return true;
+      return this.options.roll({ formula, mapPath: this.options.projection.slotOf(player.playerId)?.mapPath || null, rolledBy: label, ...extras });
     } catch (error) {
       // Atlas refuses a formula it cannot roll by throwing; one player's roll must not stop the session's other messages.
       console.warn('[Atlas VTT Connect] A player roll was ignored:', error);
-      return false;
+      return null;
     } finally {
       this.rolling = null;
     }

@@ -4,7 +4,7 @@
  * so it imports nothing from Obsidian.
  */
 import type { DiceSelection } from '@atlas-vtt/shared/rules';
-import { decodeControl, encodeControl, type DeviceProof, type PresencePlayer, type TableProof } from './protocol';
+import { decodeControl, encodeControl, type ControlMessage, type DeviceProof, type PresencePlayer, type TableProof } from './protocol';
 import { PlayerSceneInbox } from './playerSessionScene';
 import type { BoardCamera, BoardCutscene, BoardExtras, CutsceneCamera } from './scene/boardTypes';
 import { CutsceneExtrasInbox, mergeBoardExtras } from './scene/cutsceneExtrasInbox';
@@ -84,6 +84,8 @@ export interface PlayerSessionOptions {
   onLaser?(laser: PlayerLaser): void;
   /** The sheets of the tokens this player controls (`token-sheets`): their exact numbers and stat blocks. */
   onSheets?(entries: readonly TokenSheet[]): void;
+  /** Daggerheart: the player's character sheets, a roll's outcome, and a refused request (`src/daggerheart`). */
+  onDaggerheart?(message: Extract<ControlMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' }>): void;
   /** Someone else's ping, for the scene `sceneId`. */
   onPing?(ping: PlayerPing): void;
   /**
@@ -252,6 +254,13 @@ export class PlayerSession {
   }
 
   /** Asks the GM to roll something on the player's own sheet, by where it is on it; false when it cannot go. */
+  /** Sends a Daggerheart sheet change or roll; false when it cannot go. */
+  sendDaggerheart(message: Extract<ControlMessage, { type: 'dh-edit' | 'dh-roll' }>): boolean {
+    if (this.finished || this.state.status !== 'admitted' || !this.link) return false;
+    this.link.send('control', encodeControl(message));
+    return true;
+  }
+
   sendSheetRoll(tokenId: string, roll: SheetRollRef): boolean {
     if (this.finished || this.state.status !== 'admitted' || !this.link) return false;
     this.link.send('control', encodeControl({ v: 1, type: 'sheet-roll', tokenId, roll }));
@@ -412,6 +421,11 @@ export class PlayerSession {
         break;
       case 'token-sheets':
         this.options.onSheets?.(message.entries);
+        break;
+      case 'dh-sheets':
+      case 'dh-rolled':
+      case 'dh-refused':
+        this.options.onDaggerheart?.(message);
         break;
       case 'spell-asks':
         this.marks.asks(message.sceneId, joinAsks(message.asks, message.askWords, message.askRules));

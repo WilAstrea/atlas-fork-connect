@@ -12,6 +12,7 @@ import { ConnectSettingTab } from './src/connect/settingTab';
 import { sharingLifetime } from './src/app/online/sharing/sharingLifetime';
 import { startConnect } from './src/connect/startConnect';
 import { dismissOpenDialog } from './src/app/ui/dialogShell';
+import { registerDaggerheart } from './src/daggerheart/obsidian';
 
 export default class AtlasVttConnectPlugin extends Plugin {
   /** Connect's own settings; narrows the base class's `settings?: unknown`. */
@@ -26,6 +27,8 @@ export default class AtlasVttConnectPlugin extends Plugin {
     this.settings = await ConnectSettingsStore.load(this, obsidianLocalStore(this.app), (message) => { new Notice(message); });
     if (this.settings.takeKeyMoved()) new Notice(KEY_MOVED_NOTICE);
     registerNewTableKey(this, this.settings);
+    // Daggerheart: the PDF import command and the sheet block work without a session.
+    registerDaggerheart(this);
     // Registered at load, so a scene tab Obsidian restores at startup exists and closes itself cleanly.
     this.registerView(ONLINE_SCENE_VIEW_TYPE, (leaf) => new CanvasSceneView(leaf));
     this.addSettingTab(new ConnectSettingTab(this.app, this, this.settings, () => (this.canShare === false ? UPDATE_ATLAS_TO_SHARE : null)));

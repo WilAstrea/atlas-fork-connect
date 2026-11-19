@@ -141,6 +141,7 @@ export class OnlineSessionService {
         ...(deps.dice ? { dice: deps.dice } : {}),
         ...(deps.diceRules ? { diceRules: deps.diceRules } : {}),
         ...(deps.sheets ? { sheets: deps.sheets } : {}),
+        ...(deps.daggerheart ? { daggerheart: deps.daggerheart } : {}),
         ...(deps.pings ? { pings: deps.pings } : {}),
         ...(deps.templates ? { templates: deps.templates } : {}),
         // The vault's notes: a readable pin's note goes to the player who opens it.

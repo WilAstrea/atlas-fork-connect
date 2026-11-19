@@ -38,6 +38,8 @@ import type { DecodedImage } from '../src/app/online/assets/AssetLoader';
 import type { AssetMime } from '../src/app/online/assets/assetIds';
 import { Menu } from './menu.mts';
 import { PageToolbar } from './toolbar.mts';
+import { DhPanel } from './daggerheart/dhPanel.mts';
+import '../src/daggerheart/daggerheart.css';
 
 const VERSION = '0.1.0';
 
@@ -202,6 +204,11 @@ const sheets = new SheetView({
   panel: element('sheet-panel'), body: element('sheet-body'), tabs: element('sheet-tabs'),
   closeButton: element('sheet-close'), toggleButton: element('sheet-button'),
   onRoll: (tokenId, roll) => session?.sendSheetRoll(tokenId, roll) ?? false,
+});
+const daggerheart = new DhPanel({
+  panel: element('dh-panel'), body: element('dh-body'), tabs: element('dh-tabs'),
+  closeButton: element('dh-close'), toggleButton: element('dh-button'),
+  send: (message) => session?.sendDaggerheart(message) ?? false,
 });
 const diceLog = new DiceLogView({
   panel: element('dice-log'), list: element('dice-log-list'), empty: element('dice-log-empty'),
@@ -440,6 +447,7 @@ if (!target) {
         sheets.receive(entries);
         map.setSheets(entries);
       },
+      onDaggerheart: (message) => daggerheart.receive(message),
       onPinNote: (answer) => map.receiveNote(answer),
       onBoardOffer: (available, dice) => {
         log.event('board offer', { available });
