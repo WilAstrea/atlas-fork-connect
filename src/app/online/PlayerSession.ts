@@ -86,6 +86,8 @@ export interface PlayerSessionOptions {
   onSheets?(entries: readonly TokenSheet[]): void;
   /** Daggerheart: the player's character sheets, a roll's outcome, and a refused request (`src/daggerheart`). */
   onDaggerheart?(message: Extract<ControlMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' | 'dh-theme' | 'chat' }>): void;
+  /** The fork's add-ons: Portrait Stage's stage and moments, and the world map (`src/addons`). */
+  onAddon?(message: Extract<ControlMessage, { type: 'ps-stage' | 'ps-pulse' | 'world-map' }>): void;
   /** Someone else's ping, for the scene `sceneId`. */
   onPing?(ping: PlayerPing): void;
   /**
@@ -428,6 +430,11 @@ export class PlayerSession {
       case 'dh-theme':
       case 'chat':
         this.options.onDaggerheart?.(message);
+        break;
+      case 'ps-stage':
+      case 'ps-pulse':
+      case 'world-map':
+        this.options.onAddon?.(message);
         break;
       case 'spell-asks':
         this.marks.asks(message.sceneId, joinAsks(message.asks, message.askWords, message.askRules));

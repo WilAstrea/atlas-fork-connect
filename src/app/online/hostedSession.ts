@@ -6,6 +6,8 @@
  */
 import { PlayerColors } from './tools/playerColors';
 import type { DiceRollResult, ViewsApi } from '@atlas-vtt/api-types';
+import { ExtraAssets, withExtras } from '../../addons/extraAssets';
+import type { VaultAssetIds } from '../../addons/relayBase';
 import { Notice } from 'obsidian';
 import { AssetServer } from './assets/AssetServer';
 import type { TokenControl } from './control/TokenControl';
@@ -100,7 +102,12 @@ export interface OptionalParts {
   notes?: (context: HostedContext) => HostedPart;
   /** Daggerheart sheets from the vault's character notes, edited and rolled by their players (`src/daggerheart`). */
   daggerheart?: (context: HostedContext & { roll: DaggerheartRoll | null; notify: (message: string) => void }) => HostedPart;
+  /** Portrait Stage and the world map for online players (`src/addons`). */
+  addons?: AddonsPart;
 }
+
+/** The fork's add-ons (Portrait Stage, the world map): the vault's asset ids, and the extra images players may fetch. */
+export type AddonsPart = (context: HostedContext & { assets: VaultAssetIds; extras: ExtraAssets; notify: (message: string) => void }) => HostedPart;
 
 /** Rolls for a player through the dice part, with Atlas's roll; null when refused. */
 export type DaggerheartRoll = (player: SessionPlayer, formula: string, extras?: SheetRollExtras) => DiceRollResult | null;
@@ -242,7 +249,9 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
     ...(env.dice && env.diceRules ? { diceRules: env.diceRules } : {}),
   });
   // Serves the images of the scene players have, over each player's assets channel.
-  const assetServer = new AssetServer({ session, projection: hub, files: registry, cutscene: cutsceneSender });
+  // Images beyond the scene's (portraits, the world map), joined to the cutscene's in the server's one hook.
+  const extraAssets = new ExtraAssets();
+  const assetServer = new AssetServer({ session, projection: hub, files: registry, cutscene: withExtras(cutsceneSender, extraAssets) });
   // Started in this order, after the asset server: control lists follow snapshots and cameras, dice and lasers come last.
   const tokenControl = env.tokenControl?.(context) ?? null;
   const dice = env.dice?.(context) ?? null;
@@ -267,6 +276,7 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
   const notes = env.notes?.(context) ?? null;
   const daggerheartRoll: DaggerheartRoll | null = dice?.rollResultFor ? (player, formula, extras) => dice.rollResultFor?.(player, formula, extras) ?? null : null;
   const daggerheart = env.daggerheart?.({ ...context, roll: daggerheartRoll, notify }) ?? null;
+  const addons = env.addons?.({ ...context, assets: registry, extras: extraAssets, notify }) ?? null;
   const rollFor = dice?.rollFor ? (player: SessionPlayer, formula: string, extras?: SheetRollExtras): boolean => dice.rollFor?.(player, formula, extras) ?? false : null;
   const sheets = tokenControl && env.sheets ? env.sheets({ ...context, control: tokenControl.control, ...(rollFor ? { rollFor } : {}) }) : null;
   // Players' physical sheet rolls are named from the GM's own copy of their sheets.
@@ -286,7 +296,7 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
     stopSharing = null;
     stopErrors();
     assetServer.stop();
-    for (const part of given([daggerheart, arViews, notes, templates, pings, sheets, tokenControl, laser, dice])) part.stop();
+    for (const part of given([addons, daggerheart, arViews, notes, templates, pings, sheets, tokenControl, laser, dice])) part.stop();
     colors.stop();
     cutsceneSender.stop();
     boardSender.stop();
@@ -309,7 +319,7 @@ export async function hostSession(env: HostEnvironment, sharing: HostedSharingHo
     boardSender.start();
     cutsceneSender.start();
     assetServer.start();
-    for (const part of given([tokenControl, dice, laser, sheets, pings, templates, notes, arViews, daggerheart])) {
+    for (const part of given([tokenControl, dice, laser, sheets, pings, templates, notes, arViews, daggerheart, addons])) {
       part.start();
       parts.push(part);
     }

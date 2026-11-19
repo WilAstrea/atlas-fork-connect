@@ -120,3 +120,13 @@
 @media (prefers-reduced-motion: reduce) {
   .dh-tab { transition: none; }
 }
+
+/* Portrait Stage: over the map, under every panel (as in Atlas's player window, under its widgets and dice). */
+.aps-host { position: absolute; inset: 0; z-index: 0; pointer-events: none; grid-row: 1 / -1; grid-column: 1; }
+
+/* The world map (Map tab): fills the page, to pan and zoom. */
+.dh-table-skin #dh-map { padding: 76px 16px 76px; }
+.dh-worldmap { position: absolute; inset: 72px 12px 72px; overflow: hidden; border-radius: 10px; border: 1px solid var(--border); background: #0f0d0a; cursor: grab; touch-action: none; }
+.dh-worldmap:active { cursor: grabbing; }
+.dh-worldmap img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; max-width: none; }
+.dh-worldmap-hint { position: absolute; right: 12px; bottom: 10px; padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, 0.55); color: var(--muted); font-size: 12px; pointer-events: none; }

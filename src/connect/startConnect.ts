@@ -1,5 +1,6 @@
 import { Curtain } from '../app/online/atlas/curtain';
 import { daggerheartPart } from '../daggerheart/obsidian';
+import { addonsPart } from '../addons/obsidian';
 import { obsidianStatblocks } from './statblockSource';
 import type { Plugin } from 'obsidian';
 import type { AtlasApi, AtlasExtension, Disposer } from '@atlas-vtt/api-types';
@@ -80,6 +81,8 @@ async function startHosting(plugin: Plugin, api: AtlasApi, atlas: AtlasExtension
     },
     // Daggerheart sheets from the vault's character notes (`src/daggerheart`).
     daggerheart: daggerheartPart(plugin.app),
+    // Portrait Stage and the world map for online players (`src/addons/`).
+    addons: addonsPart(plugin.app),
     people, isJoined: () => isInSession(joinedSessionStore.getState()), ...(resourceVisibility ? { resourceVisibility } : {}), minis, board, attachBoard: (session) => board.attachSession(session), ...options.hosting,
   };
   // "Players see" on Tabletop's board: the Edit Token section's choices, read in the GM's view holding the map.

@@ -39,6 +39,7 @@ import type { AssetMime } from '../src/app/online/assets/assetIds';
 import { Menu } from './menu.mts';
 import { PageToolbar } from './toolbar.mts';
 import { mountDaggerheart } from './daggerheart/table.mts';
+import { Addons } from './addons/addons.mts';
 import '../src/daggerheart/daggerheart.css';
 
 const VERSION = '0.1.0';
@@ -250,8 +251,17 @@ const loader: AssetLoader = new AssetLoader({
       assetsFrame = null;
       panel.showProgress(loader.progress());
       map?.refresh();
+      addons.refresh();
     });
   },
+});
+// Portrait Stage's stage over the map, and the world map in the Map tab (`online-client/addons/`).
+const stageHost = document.createElement('div');
+stageHost.className = 'aps-host';
+element('map').after(stageHost);
+const addons = new Addons(stageHost, daggerheart.mapPage, {
+  url: (id) => urlOf(loader.image(id)),
+  want: (ids) => loader.setExtras(ids),
 });
 /** The cutscene running now with its revealed scenes: the view plays it, the loader fetches its files. */
 const cutscenes = new CutsceneKeeper(loader, () => map);
@@ -446,6 +456,7 @@ if (!target) {
         map.setSheets(entries);
       },
       onDaggerheart: (message) => daggerheart.receive(message),
+      onAddon: (message) => addons.receive(message),
       onPinNote: (answer) => map.receiveNote(answer),
       onBoardOffer: (available, dice) => {
         log.event('board offer', { available });

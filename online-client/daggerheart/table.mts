@@ -12,6 +12,8 @@ import { TrackersView } from './trackers.mts';
 import './table.css';
 
 export interface DaggerheartTable {
+  /** Where the add-ons draw: the Map tab's page. */
+  readonly mapPage: HTMLElement;
   receive(message: Extract<DhMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' | 'dh-theme' | 'chat' }>): void;
   widgets(widgets: readonly PlayerWidget[]): void;
 }
@@ -27,12 +29,9 @@ export function mountDaggerheart(send: (message: Extract<DhMessage, { type: 'dh-
     send,
     share: (card) => chat.shareCard(card),
   });
-  const mapNote = document.createElement('p');
-  mapNote.className = 'dh-empty';
-  mapNote.textContent = 'El mapa del mundo aún no se ha compartido.';
-  layout.mapPage.append(mapNote);
   layout.onTab((tab) => sheet.show(tab === 'sheet' || tab === 'inventory' ? tab : null));
   return {
+    mapPage: layout.mapPage,
     receive(message) {
       if (message.type === 'chat') chat.receive(message.entries, message.history === true);
       else sheet.receive(message);
