@@ -1,0 +1,122 @@
+/* online-client/daggerheart/table.css
+   The Daggerheart table's skin over Connect's page (`layout.mts`): Atlas's parchment-and-ink look, the tab bar at the
+   top centre, widgets at the top right, the dock (chat, dice log) and the rolls at the bottom left, the page's other
+   buttons at the bottom right, and the Sheet, Inventory and Map pages over the map. Only `.dh-table-skin` is styled,
+   so Connect's page is untouched without it. */
+.dh-table-skin {
+  --bg: #1d1a16; --card: #26221c; --text: #ebe2cf; --muted: #b3a68c; --border: #4a4133; --accent: #c9a45c;
+  --bar: rgba(38, 34, 28, 0.94); --hover: rgba(235, 226, 207, 0.1); --shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  --parchment: #e9dfc7; --ink: #2a241b; --panel-radius: 10px;
+  --dh-serif: "Palatino Linotype", "Book Antiqua", Palatino, "Iowan Old Style", Georgia, serif;
+  color-scheme: dark;
+  color: var(--text);
+  font-family: var(--dh-serif);
+}
+/* The top bar, the dock and the corner stay above the pages. */
+.dh-table-skin .top-bar { z-index: 4; }
+.dh-table-skin .dh-sheet button { min-height: 0; }
+.dh-table-skin button { font-family: inherit; }
+
+/* Surfaces: dark leather with a thin gilt line. */
+.dh-table-skin .top-pill, .dh-table-skin .toolbar, .dh-table-skin .dice-tray, .dh-table-skin .toolbar-menu,
+.dh-table-skin .dice-throw, .dh-table-skin .dice-card, .dh-table-skin .dh-chat, .dh-table-skin .dice-log,
+.dh-table-skin .menu, .dh-table-skin .initiative-panel {
+  background: linear-gradient(180deg, rgba(255, 240, 210, 0.05), transparent 40%), var(--card);
+  border: 1px solid var(--border); box-shadow: var(--shadow), inset 0 0 0 1px rgba(201, 164, 92, 0.12);
+}
+.dh-table-skin .tool-button.is-active, .dh-table-skin .tool-button.is-active:hover { background: var(--parchment); color: var(--ink); }
+
+/* The top: session at the left, tabs in the middle, widgets at the right. */
+.dh-table-skin .top-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; }
+.dh-table-skin .top-info { justify-self: start; max-width: 100%; }
+.dh-tabbar { justify-self: center; display: flex; gap: 4px; padding: 5px; }
+.dh-tab {
+  display: inline-flex; align-items: baseline; gap: 6px; min-height: 0; padding: 6px 16px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text); font-size: 17px; font-weight: 700; letter-spacing: 0.02em; cursor: pointer;
+}
+.dh-tab:hover { background: var(--hover); }
+.dh-tab.is-active { background: var(--parchment); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
+.dh-tab-key { font-size: 12px; font-weight: 600; opacity: 0.7; }
+.dh-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Widgets: icon, big value, small-caps label. */
+.dh-trackers { justify-self: end; display: flex; gap: 8px; pointer-events: auto; }
+.dh-tracker {
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; border-radius: 8px;
+  background: rgba(38, 34, 28, 0.92); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.dh-tracker-icon { width: 28px; height: 28px; flex: none; }
+.dh-tracker-text { display: grid; justify-items: center; line-height: 1.05; }
+.dh-tracker-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dh-tracker-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+/* The page's own buttons, bottom right; Follow GM and Fit map stay beside them. */
+.dh-corner {
+  position: absolute; z-index: 2; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
+}
+.dh-corner .top-actions { margin: 0; }
+.dh-table-skin .view-buttons { right: calc(max(12px, env(safe-area-inset-right)) + 200px); }
+.dh-table-skin #dh-button { display: none; }
+
+/* The dock, bottom left: Chat and Dice log; their panels and the rolls rise above it. */
+.dh-dock {
+  position: absolute; z-index: 3; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex; gap: 6px; padding: 5px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.dh-dock-button { position: relative; width: auto; padding: 0 12px; font-size: 14px; font-weight: 700; }
+.dh-dock-button[data-unread]:not([data-unread=""])::after {
+  content: attr(data-unread); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px; background: #b33a3a; color: #fff; font: 700 11px/18px system-ui, sans-serif;
+}
+.dh-table-skin .dice-log, .dh-chat {
+  position: absolute; z-index: 3; top: auto; right: auto; left: max(12px, env(safe-area-inset-left));
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 58px); width: min(360px, calc(100vw - 24px)); max-height: min(52vh, 520px);
+  border-radius: 10px; overflow-y: auto;
+}
+/* Rolls land above the dock, at the bottom left, newest at the bottom. */
+.dh-table-skin .top-stack {
+  grid-row: 2; align-self: end; justify-self: start; align-items: flex-start; margin: 0 0 calc(max(12px, env(safe-area-inset-bottom)) + 58px) max(12px, env(safe-area-inset-left));
+  z-index: 3;
+}
+.dh-table-skin .top-notes, .dh-table-skin .dice-toasts { align-items: flex-start; }
+/* While a panel is open above the dock, rolls sit beside it. */
+.dh-table-skin:has(.dh-chat:not([hidden]), .dice-log:not([hidden])) .top-stack { margin-left: calc(max(12px, env(safe-area-inset-left)) + 372px); }
+
+/* The chat. */
+.dh-chat { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow: hidden; }
+.dh-chat-header { display: flex; align-items: center; }
+.dh-chat-header h2 { flex: 1; color: var(--muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.dh-chat-list { flex: 1; min-height: 120px; overflow-y: auto; display: grid; align-content: start; gap: 8px; }
+.dh-chat-line { display: grid; gap: 4px; padding: 6px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.22); }
+.dh-chat-line.is-gm { background: rgba(201, 164, 92, 0.14); }
+.dh-chat-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.dh-chat-head time { color: var(--muted); }
+.dh-chat-line p { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dh-chat-line .dh-card { flex: none; width: 200px; justify-self: start; font-family: system-ui, sans-serif; }
+.dh-chat-form { display: flex; gap: 6px; }
+.dh-chat-form input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: rgba(0, 0, 0, 0.25); color: var(--text); font: inherit; }
+.dh-chat-form button { padding: 0 14px; border-radius: 6px; border: 0; background: var(--parchment); color: var(--ink); font-weight: 700; cursor: pointer; }
+
+/* Sheet, Inventory and Map: pages over the map, under the top bar and above the dock. */
+.dh-page, .dh-table-skin .dh-panel.dh-page {
+  position: absolute; z-index: 1; inset: 0; width: auto !important; overflow-y: auto; touch-action: pan-y; user-select: text;
+  padding: 76px max(16px, calc((100vw - 1180px) / 2)) 90px; background: radial-gradient(120% 80% at 50% 0%, #2b2620, #15130f 70%);
+  border: 0; display: block;
+}
+.dh-table-skin .dh-panel .sheet-header { display: none; }
+.dh-table-skin .dh-panel .sheet-tabs { margin-bottom: 12px; }
+.dh-empty { margin: 80px auto; max-width: 520px; text-align: center; font-style: italic; color: var(--muted); font-size: 17px; }
+/* The map stays still behind a page. */
+.dh-table-skin:not([data-dh-tab="table"]) .toolbar, .dh-table-skin:not([data-dh-tab="table"]) .view-buttons,
+.dh-table-skin:not([data-dh-tab="table"]) .initiative-panel, .dh-table-skin:not([data-dh-tab="table"]) .dice-tray { display: none !important; }
+
+@media (max-width: 760px) {
+  .dh-table-skin .top-bar { grid-template-columns: 1fr auto; }
+  .dh-table-skin .top-info { display: none; }
+  .dh-tab { padding: 6px 10px; font-size: 15px; }
+  .dh-tab-key { display: none; }
+  .dh-table-skin .view-buttons { right: max(12px, env(safe-area-inset-right)); bottom: 70px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dh-tab { transition: none; }
+}

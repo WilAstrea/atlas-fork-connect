@@ -38,7 +38,7 @@ import type { DecodedImage } from '../src/app/online/assets/AssetLoader';
 import type { AssetMime } from '../src/app/online/assets/assetIds';
 import { Menu } from './menu.mts';
 import { PageToolbar } from './toolbar.mts';
-import { DhPanel } from './daggerheart/dhPanel.mts';
+import { mountDaggerheart } from './daggerheart/table.mts';
 import '../src/daggerheart/daggerheart.css';
 
 const VERSION = '0.1.0';
@@ -205,11 +205,8 @@ const sheets = new SheetView({
   closeButton: element('sheet-close'), toggleButton: element('sheet-button'),
   onRoll: (tokenId, roll) => session?.sendSheetRoll(tokenId, roll) ?? false,
 });
-const daggerheart = new DhPanel({
-  panel: element('dh-panel'), body: element('dh-body'), tabs: element('dh-tabs'),
-  closeButton: element('dh-close'), toggleButton: element('dh-button'),
-  send: (message) => session?.sendDaggerheart(message) ?? false,
-});
+// Daggerheart: tabs, trackers, chat and the sheet (`online-client/daggerheart/`).
+const daggerheart = mountDaggerheart((message) => session?.sendDaggerheart(message) ?? false);
 const diceLog = new DiceLogView({
   panel: element('dice-log'), list: element('dice-log-list'), empty: element('dice-log-empty'),
   closeButton: element('dice-log-close'), toggleButton: element('dice-log-button'), toast: element('dice-toast'),
@@ -369,6 +366,7 @@ function renderScene(): void {
     map?.setScene(shown);
   }
   fillList(widgetList, shown ? widgetLines(shown.widgets) : []);
+  daggerheart.widgets(shown ? shown.widgets : []);
   // Read-only, for checking in the developer tools what this page received.
   (window as unknown as { atlasScene: PlayerScene | null }).atlasScene = shown;
 }

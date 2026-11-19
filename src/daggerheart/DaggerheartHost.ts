@@ -11,8 +11,9 @@ import type { ControlMessage } from '../app/online/protocol';
 import type { SceneSession } from '../app/online/scene/sceneContracts';
 import { admitted } from '../app/online/scene/slotAudience';
 import type { DaggerheartRoll } from '../app/online/hostedSession';
+import type { ChatLog } from './chat';
 import type { DaggerheartCharacter } from './model';
-import { sheetId, type DhMessage, type DhRefusal, type DhSheet } from './protocol';
+import { cardFace, sheetId, type ChatEntry, type DhCardFace, type DhMessage, type DhRefusal, type DhSheet, type ThemeImage } from './protocol';
 import { afterCardRoll, afterDuality, applyEdit, buildRoll, dualityOutcome, moveCard, type DhEdit, type DhRollRequest } from './rules';
 
 export interface StoredCharacter { path: string; character: DaggerheartCharacter }
@@ -31,6 +32,10 @@ export interface DaggerheartHostOptions {
   store: CharacterStore;
   roll: DaggerheartRoll | null;
   notify: (message: string) => void;
+  /** The session chat; without it chat lines are ignored. */
+  chat?: ChatLog;
+  /** The GM's private sheet art, as data URLs, sent to each player when they are let in. */
+  theme?: () => Promise<Partial<Record<ThemeImage, string>>>;
 }
 
 const sameName = (a: string | undefined, b: string): boolean => !!a && a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -47,6 +52,7 @@ export class DaggerheartHost implements SessionHandler {
   start(): void {
     if (this.stops.length > 0) return;
     this.stops.push(this.options.session.use(this), this.options.store.onChange(() => this.scheduleResend()));
+    if (this.options.chat) this.stops.push(this.options.chat.onEntry((entry) => this.broadcast([entry])));
   }
 
   stop(): void {
@@ -59,6 +65,9 @@ export class DaggerheartHost implements SessionHandler {
   onAdmitted(player: SessionPlayer): void {
     this.sent.delete(player.playerId);
     this.guard(this.sendTo(player));
+    this.guard(this.sendTheme(player));
+    const history = this.options.chat?.entries ?? [];
+    if (history.length > 0) this.send(player, { v: 1, type: 'chat', entries: [...history], history: true });
   }
 
   onGone(player: SessionPlayer): void {
@@ -68,6 +77,32 @@ export class DaggerheartHost implements SessionHandler {
   onMessage(player: SessionPlayer, message: ControlMessage): void {
     if (message.type === 'dh-edit') this.guard(this.edit(player, message.id, message.edit));
     else if (message.type === 'dh-roll') this.guard(this.rollFrom(player, message.id, message.roll));
+    else if (message.type === 'chat-send') this.guard(this.chatFrom(player, message.text, message.card));
+  }
+
+  /** A player's chat line, under their session name. A card must be one of their own, and is shown as the GM's note has it. */
+  private async chatFrom(player: SessionPlayer, text: string | undefined, card: DhCardFace | undefined): Promise<void> {
+    const chat = this.options.chat;
+    if (!chat) return;
+    let face: DhCardFace | undefined;
+    if (card) {
+      const own = (await this.charactersOf(player)).flatMap((s) => s.character.build.domainCards).find((c) => c.name === card.name);
+      if (!own) return;
+      face = cardFace(own);
+    }
+    chat.post(player.name, { text, card: face });
+  }
+
+  private broadcast(entries: ChatEntry[]): void {
+    const players = new Set(admitted(this.options.session.getPlayers()));
+    for (const player of this.options.session.getPlayers()) {
+      if (players.has(player.playerId)) this.send(player, { v: 1, type: 'chat', entries });
+    }
+  }
+
+  private async sendTheme(player: SessionPlayer): Promise<void> {
+    const images = (await this.options.theme?.()) ?? {};
+    if (Object.keys(images).length > 0) this.send(player, { v: 1, type: 'dh-theme', images });
   }
 
   /** A note that cannot be read or written must not stop the session's other messages. */

@@ -1,20 +1,23 @@
 // online-client/daggerheart/dhPanel.mts
 /**
- * The player's Daggerheart sheet on the join page: a wide drawer with their character (one tab per character they
- * play), its loadout as cards, and the result of their last roll. Its button shows only while the GM sends a sheet.
- * Every change and roll goes to the GM, who answers with the sheet as the note now says.
+ * The player's Daggerheart pages on the join page: the Sheet tab (their character and its loadout as cards) and the
+ * Inventory tab, one sub-tab per character they play. Every change and roll goes to the GM, who answers with the
+ * sheet as the note now says; a click on a card shares it in the session chat. The GM's private art (`dh-theme`)
+ * dresses the tracks while the session lasts; it is kept in memory only.
  */
-import type { DhMessage, DhSheet } from '../../src/daggerheart/protocol';
-import { newRollChoice, renderSheet, rolledLine, type RollChoice } from '../../src/daggerheart/render';
+import type { DhCardFace, DhMessage, DhSheet } from '../../src/daggerheart/protocol';
+import { newRollChoice, renderInventory, renderSheet, rolledLine, type RollChoice, type SheetTheme } from '../../src/daggerheart/render';
 import type { DhEdit, DhRollRequest } from '../../src/daggerheart/rules';
 
 export interface DhPanelOptions {
-  panel: HTMLElement;
-  body: HTMLElement;
+  /** The Sheet page: its sub-tabs and body. */
+  sheetBody: HTMLElement;
   tabs: HTMLElement;
-  closeButton: HTMLButtonElement;
-  toggleButton: HTMLButtonElement;
+  inventoryPage: HTMLElement;
   send(message: Extract<DhMessage, { type: 'dh-edit' | 'dh-roll' }>): boolean;
+  share(card: DhCardFace): boolean;
+  /** A roll's outcome or a refusal, for the player to read wherever they are. */
+  onStatus?(text: string): void;
   doc?: Document;
 }
 
@@ -26,41 +29,43 @@ const REFUSALS: Record<string, string> = {
   'not-rolled': 'The GM could not roll that.',
 };
 
+const NO_SHEET = 'Aún no tienes ficha. Cuando tu DJ te asigne un personaje de Daggerheart, aparecerá aquí.';
+
 export class DhPanel {
   private sheets: readonly DhSheet[] = [];
   private picked: string | null = null;
-  private open = false;
   private readonly choices = new Map<string, RollChoice>();
   private status: string | null = null;
+  private theme: SheetTheme | null = null;
+  private shown: 'sheet' | 'inventory' | null = null;
 
-  constructor(private readonly options: DhPanelOptions) {
-    options.toggleButton.hidden = true;
-    options.panel.hidden = true;
-    options.toggleButton.addEventListener('click', () => this.setOpen(!this.open));
-    options.closeButton.addEventListener('click', () => this.setOpen(false));
+  constructor(private readonly options: DhPanelOptions) {}
+
+  /** Which page shows (the table's tab); null draws nothing. */
+  show(page: 'sheet' | 'inventory' | null): void {
+    this.shown = page;
+    this.draw();
   }
 
-  receive(message: Extract<DhMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' }>): void {
+  receive(message: Extract<DhMessage, { type: 'dh-sheets' | 'dh-rolled' | 'dh-refused' | 'dh-theme' }>): void {
     if (message.type === 'dh-sheets') {
       this.sheets = message.entries;
       if (!this.sheets.some((s) => s.id === this.picked)) this.picked = this.sheets[0]?.id ?? null;
-      this.options.toggleButton.hidden = this.sheets.length === 0;
-      if (this.sheets.length === 0) this.setOpen(false);
+    } else if (message.type === 'dh-theme') {
+      this.theme = message.images;
     } else if (message.type === 'dh-rolled') {
-      this.status = rolledLine(message.label, message.total, message.hope, message.fear, message.outcome);
+      this.setStatus(rolledLine(message.label, message.total, message.hope, message.fear, message.outcome));
       // Experiences picked for a roll are spent with it.
       if (message.hope !== undefined) this.choices.get(message.id)?.experiences.clear();
     } else {
-      this.status = REFUSALS[message.reason] ?? 'The GM refused that.';
+      this.setStatus(REFUSALS[message.reason] ?? 'The GM refused that.');
     }
     this.draw();
   }
 
-  private setOpen(open: boolean): void {
-    this.open = open && this.sheets.length > 0;
-    this.options.panel.hidden = !this.open;
-    this.options.toggleButton.setAttribute('aria-expanded', String(this.open));
-    this.draw();
+  private setStatus(text: string): void {
+    this.status = text;
+    this.options.onStatus?.(text);
   }
 
   private choiceFor(id: string): RollChoice {
@@ -69,9 +74,9 @@ export class DhPanel {
     return choice;
   }
 
-  private draw(): void {
-    const { body, tabs } = this.options;
+  private drawTabs(): void {
     const doc = this.options.doc ?? document;
+    const { tabs } = this.options;
     tabs.replaceChildren();
     tabs.hidden = this.sheets.length < 2;
     for (const sheet of this.sheets) {
@@ -82,15 +87,36 @@ export class DhPanel {
       tab.addEventListener('click', () => { this.picked = sheet.id; this.draw(); });
       tabs.append(tab);
     }
+  }
+
+  private draw(): void {
+    const doc = this.options.doc ?? document;
+    const { sheetBody, inventoryPage } = this.options;
+    this.drawTabs();
     const sheet = this.sheets.find((s) => s.id === this.picked);
-    if (!this.open || !sheet) {
-      body.replaceChildren();
+    if (this.shown !== 'sheet') sheetBody.replaceChildren();
+    if (this.shown !== 'inventory') inventoryPage.replaceChildren();
+    const target = this.shown === 'sheet' ? sheetBody : this.shown === 'inventory' ? inventoryPage : null;
+    if (!target) return;
+    if (!sheet) {
+      const empty = doc.createElement('p');
+      empty.className = 'dh-empty';
+      empty.textContent = NO_SHEET;
+      target.replaceChildren(empty);
+      return;
+    }
+    if (this.shown === 'inventory') {
+      renderInventory(inventoryPage, sheet, { doc, theme: this.theme });
       return;
     }
     const { id } = sheet;
-    renderSheet(body, sheet, {
+    renderSheet(sheetBody, sheet, {
       edit: (edit: DhEdit) => { this.options.send({ v: 1, type: 'dh-edit', id, edit }); },
       roll: (roll: DhRollRequest) => { this.options.send({ v: 1, type: 'dh-roll', id, roll }); },
-    }, { doc, choice: this.choiceFor(id), redraw: () => this.draw(), status: this.status });
+      share: (card) => {
+        if (this.options.share(card)) this.setStatus(`Shared ${card.name} in the chat.`);
+        this.draw();
+      },
+    }, { doc, choice: this.choiceFor(id), redraw: () => this.draw(), status: this.status, theme: this.theme, withInventory: false });
   }
 }

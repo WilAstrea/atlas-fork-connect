@@ -236,7 +236,8 @@ function isPlayerDrawing(value: unknown): boolean {
 
 function isPlayerWidget(value: unknown): boolean {
   return isFields(value) && isText(value.id, SCENE_LIMITS.idLength) && oneOf(PLAYER_WIDGET_TYPES)(value.type)
-    && isString(value.label) && isString(value.icon) && isNumber(value.value);
+    && isString(value.label) && isString(value.icon) && isNumber(value.value)
+    && (value.color === undefined || (typeof value.color === 'string' && /^#[0-9a-f]{6}$/i.test(value.color)));
 }
 function isPlayerWidgets(value: unknown): boolean {
   return Array.isArray(value) && value.length <= SCENE_LIMITS.widgets && value.every((widget) => isPlayerWidget(widget));

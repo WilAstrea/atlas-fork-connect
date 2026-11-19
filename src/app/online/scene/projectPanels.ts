@@ -44,6 +44,7 @@ export function projectWidgets(state: WidgetState, rules: PlayerViewRules): Play
       label: textOr(widget.label, ''),
       icon: textOr(widget.icon, ''),
       value: finiteOr(isSteppedWidget(widget) ? readCounterValue({ widgetValues: state.widgets.values }, widget) : widget.value, 0),
+      ...(typeof widget.color === 'string' && /^#[0-9a-f]{6}$/i.test(widget.color) ? { color: widget.color } : {}),
     }));
 }
 

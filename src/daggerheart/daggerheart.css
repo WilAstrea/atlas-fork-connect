@@ -10,7 +10,7 @@
   --dh-hp: #d6455d;
   --dh-stress: #3fb37f;
   --dh-armor: #5b8def;
-  display: grid; gap: 12px; color: var(--dh-text); font-size: 13px; line-height: 1.35;
+  display: grid; align-content: start; align-items: start; gap: 12px; color: var(--dh-text); font-size: 13px; line-height: 1.35;
 }
 .dh-sheet button { font: inherit; color: inherit; cursor: pointer; }
 .dh-sheet button:disabled { cursor: default; }
@@ -96,3 +96,74 @@
 /* The page's drawer is wider than its token sheets. */
 .dh-panel { width: min(760px, 100%) !important; }
 .dh-button { font-size: 11px; font-weight: 800; }
+
+/* ── The GM's private art (`has-theme`, `--dh-art-<name>`): only what the theme folder holds is drawn. ── */
+.dh-pip-half { display: none; }
+.dh-sheet.has-theme .dh-pip {
+  position: relative; width: 26px; height: 26px; border: 0; border-radius: 0; transform: none;
+  background: transparent center / contain no-repeat;
+}
+.dh-sheet.has-theme .dh-pip:hover { filter: brightness(1.2); }
+.dh-sheet.has-theme .dh-pip-half { position: absolute; top: 0; bottom: 0; width: 50%; background: center / contain no-repeat; transition: transform 0.18s ease, filter 0.18s ease; }
+.dh-sheet.has-theme .dh-pip-left { left: 0; background-position: right center; }
+.dh-sheet.has-theme .dh-pip-right { right: 0; background-position: left center; }
+/* HP: an empty heart; marked, the heart breaks in two. */
+.dh-sheet.has-theme .dh-track-hp .dh-pip { background-image: var(--dh-art-hp_bg); }
+.dh-sheet.has-theme .dh-track-hp .dh-pip.is-marked { background-image: none; }
+.dh-sheet.has-theme .dh-track-hp .dh-pip.is-marked .dh-pip-half { display: block; }
+.dh-sheet.has-theme .dh-track-hp .dh-pip.is-marked .dh-pip-left { background-image: var(--dh-art-heart_left); transform: translateX(-1px) rotate(-6deg); }
+.dh-sheet.has-theme .dh-track-hp .dh-pip.is-marked .dh-pip-right { background-image: var(--dh-art-heart_right); transform: translateX(1px) rotate(6deg); }
+/* Stress and Hope: an empty setting; marked, its gem set in it. */
+.dh-sheet.has-theme .dh-track-stress .dh-pip { background-image: var(--dh-art-stress_bg); }
+.dh-sheet.has-theme .dh-track-stress .dh-pip.is-marked { background-image: var(--dh-art-stress_gem), var(--dh-art-stress_bg); background-size: 64%, contain; }
+.dh-sheet.has-theme .dh-track-hope .dh-pip { background-image: var(--dh-art-hope_bg); }
+.dh-sheet.has-theme .dh-track-hope .dh-pip.is-marked { background-image: var(--dh-art-hope_gem), var(--dh-art-hope_bg); background-size: 70%, contain; }
+/* Armor: the two halves of the art lie over each other into a whole shield while the slot is free; a used slot splits and dims. */
+.dh-sheet.has-theme .dh-track-armor .dh-pip { width: 24px; height: 30px; }
+.dh-sheet.has-theme .dh-track-armor .dh-pip .dh-pip-half { display: block; left: 0; right: 0; width: auto; background-position: center; }
+.dh-sheet.has-theme .dh-track-armor .dh-pip-left { background-image: var(--dh-art-armor_gem_left); }
+.dh-sheet.has-theme .dh-track-armor .dh-pip-right { background-image: var(--dh-art-armor_gem_right); }
+.dh-sheet.has-theme .dh-track-armor .dh-pip.is-marked .dh-pip-half { filter: grayscale(1) brightness(0.55); }
+.dh-sheet.has-theme .dh-track-armor .dh-pip.is-marked .dh-pip-left { transform: translateX(-2px) rotate(-5deg); }
+.dh-sheet.has-theme .dh-track-armor .dh-pip.is-marked .dh-pip-right { transform: translateX(2px) rotate(5deg); }
+@media (prefers-reduced-motion: reduce) { .dh-sheet.has-theme .dh-pip-half { transition: none; } }
+
+/* ── Look: banner titles, shield traits. ── */
+.dh-box-title {
+  justify-self: center; padding: 3px 22px; color: var(--dh-text); background: color-mix(in srgb, var(--dh-panel) 60%, #000);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+}
+.dh-trait { clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%); border-radius: 6px 6px 0 0; padding-bottom: 16px; }
+.dh-trait.is-spellcast { box-shadow: inset 0 0 0 2px var(--dh-hope); }
+.dh-name { font-size: 24px; letter-spacing: 0.04em; }
+
+/* ── Cards: lift on hover, share on click. ── */
+.dh-cards { padding: 12px 4px 8px; }
+.dh-card { transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.18s ease; }
+.dh-card.is-shareable { cursor: pointer; }
+.dh-card.is-shareable:hover, .dh-card.is-shareable:focus-visible {
+  transform: translateY(-8px) scale(1.06); box-shadow: 0 14px 28px rgba(0, 0, 0, 0.55); position: relative; z-index: 1; outline: none;
+}
+.dh-card.is-shareable:active { transform: translateY(-4px) scale(1.03); }
+@media (prefers-reduced-motion: reduce) {
+  .dh-card { transition: none; }
+  .dh-card.is-shareable:hover, .dh-card.is-shareable:focus-visible { transform: none; outline: 2px solid var(--dh-hope); }
+}
+.dh-card-face .dh-text { max-height: none; }
+
+/* ── Inventory page. ── */
+.dh-stats-4 { grid-template-columns: repeat(4, 1fr); }
+.dh-item-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.dh-inventory-page .dh-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+/* ── The GM's session chat in Obsidian. ── */
+.dh-chat-gm { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.dh-chat-gm .dh-chat-list { flex: 1; overflow-y: auto; display: grid; align-content: start; gap: 8px; }
+.dh-chat-gm .dh-chat-line { display: grid; gap: 4px; padding: 6px 8px; border-radius: 8px; background: var(--background-secondary); }
+.dh-chat-gm .dh-chat-line.is-gm { background: var(--background-modifier-hover); }
+.dh-chat-gm .dh-chat-head { display: flex; justify-content: space-between; font-size: 12px; }
+.dh-chat-gm .dh-chat-head time { color: var(--text-muted); }
+.dh-chat-gm .dh-chat-line p { margin: 0; white-space: pre-wrap; }
+.dh-chat-gm .dh-card { width: 200px; }
+.dh-chat-gm .dh-chat-form { display: flex; gap: 6px; }
+.dh-chat-gm .dh-chat-form input { flex: 1; }
